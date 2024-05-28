@@ -6,8 +6,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/paw1a/eschool-core/domain"
 	"github.com/paw1a/eschool-core/port"
-	log "github.com/sirupsen/logrus"
 	"go.uber.org/fx"
+	"go.uber.org/zap"
 	"math"
 	"net/http"
 	"time"
@@ -20,6 +20,7 @@ type Config struct {
 
 type Handler struct {
 	config             *Config
+	logger             *zap.Logger
 	userService        port.IUserService
 	schoolService      port.ISchoolService
 	lessonService      port.ILessonService
@@ -35,6 +36,7 @@ type Handler struct {
 type HandlerParams struct {
 	fx.In
 	Config             *Config
+	Logger             *zap.Logger
 	UserService        port.IUserService
 	SchoolService      port.ISchoolService
 	LessonService      port.ILessonService
@@ -50,6 +52,7 @@ type HandlerParams struct {
 func NewHandler(params HandlerParams, router *gin.Engine) *Handler {
 	handler := &Handler{
 		config:             params.Config,
+		logger:             params.Logger,
 		userService:        params.UserService,
 		schoolService:      params.SchoolService,
 		lessonService:      params.LessonService,
@@ -64,7 +67,7 @@ func NewHandler(params HandlerParams, router *gin.Engine) *Handler {
 
 	api := router.Group("/api")
 	v1 := api.Group("/v1")
-	v1.Use(LoggerMiddleware())
+	v1.Use(LoggerMiddleware(params.Logger))
 	{
 		handler.initAuthRoutes(v1)
 		handler.initUsersRoutes(v1)
@@ -76,7 +79,7 @@ func NewHandler(params HandlerParams, router *gin.Engine) *Handler {
 	return handler
 }
 
-func LoggerMiddleware() gin.HandlerFunc {
+func LoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		path := c.Request.URL.Path
 		start := time.Now()
@@ -86,15 +89,15 @@ func LoggerMiddleware() gin.HandlerFunc {
 		statusCode := c.Writer.Status()
 
 		if len(c.Errors) > 0 {
-			log.Error(c.Errors.ByType(gin.ErrorTypePrivate).String())
+			logger.Error(c.Errors.ByType(gin.ErrorTypePrivate).String())
 		} else {
 			msg := fmt.Sprintf("[%s %d] %s (%dms)", c.Request.Method, statusCode, path, latency)
 			if statusCode >= http.StatusInternalServerError {
-				log.Error(msg)
+				logger.Error(msg)
 			} else if statusCode >= http.StatusBadRequest {
-				log.Warn(msg)
+				logger.Warn(msg)
 			} else {
-				log.Info(msg)
+				logger.Info(msg)
 			}
 		}
 	}

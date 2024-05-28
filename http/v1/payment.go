@@ -20,24 +20,24 @@ func (h *Handler) initPaymentRoutes(api *gin.RouterGroup) {
 func (h *Handler) getCoursePaymentUrl(context *gin.Context) {
 	courseID, err := getIdFromPath(context, "id")
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	userID, err := getIdFromRequestContext(context)
 	if err != nil {
-		ErrorResponse(context, UnauthorizedError)
+		h.errorResponse(context, UnauthorizedError)
 		return
 	}
 
 	url, err := h.paymentService.GetCoursePaymentUrl(
 		context.Request.Context(), userID, courseID)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
-	SuccessResponse(context, url.String())
+	h.successResponse(context, url.String())
 }
 
 func (h *Handler) processCoursePayment(context *gin.Context) {
@@ -47,21 +47,21 @@ func (h *Handler) processCoursePayment(context *gin.Context) {
 	paidDigits := strings.Split(paid, ".")
 	paidInt, err := strconv.ParseInt(paidDigits[0], 10, 64)
 	if err != nil {
-		ErrorResponse(context, BadRequestError)
+		h.errorResponse(context, BadRequestError)
 		return
 	}
 
 	payload, err := h.paymentService.ProcessCoursePayment(context.Request.Context(), key, paidInt)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	err = h.courseService.AddCourseStudent(context.Request.Context(), payload.UserID, payload.CourseID)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
-	SuccessResponse(context, "successfully paid")
+	h.successResponse(context, "successfully paid")
 }

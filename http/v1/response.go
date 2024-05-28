@@ -7,7 +7,6 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/paw1a/eschool-core/errs"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
 	"time"
@@ -146,16 +145,16 @@ func ParseError(err error) RestErr {
 	}
 }
 
-func ErrorResponse(context *gin.Context, err error) {
-	log.Error(err)
+func (h *Handler) errorResponse(context *gin.Context, err error) {
+	h.logger.Error(err.Error())
 	restErr := ParseError(err)
 	context.AbortWithStatusJSON(restErr.Status(), restErr)
 }
 
-func SuccessResponse(context *gin.Context, data interface{}) {
+func (h *Handler) successResponse(context *gin.Context, data interface{}) {
 	context.JSON(http.StatusOK, data)
 }
 
-func CreatedResponse(context *gin.Context, data interface{}) {
+func (h *Handler) createdResponse(context *gin.Context, data interface{}) {
 	context.JSON(http.StatusCreated, data)
 }

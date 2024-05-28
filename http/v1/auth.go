@@ -24,7 +24,7 @@ func (h *Handler) userSignIn(context *gin.Context) {
 	var signInDTO dto.SignInDTO
 	err := context.ShouldBindJSON(&signInDTO)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
@@ -34,7 +34,7 @@ func (h *Handler) userSignIn(context *gin.Context) {
 		Fingerprint: signInDTO.Fingerprint,
 	})
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
@@ -42,14 +42,14 @@ func (h *Handler) userSignIn(context *gin.Context) {
 	context.SetCookie("refreshToken", authDetails.RefreshToken.String(),
 		86400, "/", h.config.Host, false, false)
 
-	SuccessResponse(context, authDetails.AccessToken.String())
+	h.successResponse(context, authDetails.AccessToken.String())
 }
 
 func (h *Handler) userSignUp(context *gin.Context) {
 	var signUpDTO dto.SignUpDTO
 	err := context.ShouldBindJSON(&signUpDTO)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
@@ -63,11 +63,11 @@ func (h *Handler) userSignUp(context *gin.Context) {
 		AvatarUrl: signUpDTO.AvatarUrl,
 	})
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
-	CreatedResponse(context, "successfully signed up")
+	h.createdResponse(context, "successfully signed up")
 }
 
 func (h *Handler) userRefresh(context *gin.Context) {
@@ -77,38 +77,38 @@ func (h *Handler) userRefresh(context *gin.Context) {
 func (h *Handler) userLogout(context *gin.Context) {
 	refreshCookie, err := context.Cookie("refreshToken")
 	if err != nil {
-		ErrorResponse(context, UnauthorizedError)
+		h.errorResponse(context, UnauthorizedError)
 		return
 	}
 
 	err = h.authService.LogOut(context, domain.Token(refreshCookie))
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 	}
 
 	context.SetCookie("refreshToken", "", -1, "/", h.config.Host, false, false)
 
-	SuccessResponse(context, "successfully logged out")
+	h.successResponse(context, "successfully logged out")
 }
 
 func (h *Handler) refreshToken(context *gin.Context) {
 	var refreshDTO dto.RefreshDTO
 	err := context.ShouldBindJSON(&refreshDTO)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	refreshCookie, err := context.Cookie("refreshToken")
 	if err != nil {
-		ErrorResponse(context, UnauthorizedError)
+		h.errorResponse(context, UnauthorizedError)
 		return
 	}
 
 	authDetails, err := h.authService.Refresh(context, domain.Token(refreshCookie),
 		refreshDTO.Fingerprint)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
@@ -116,19 +116,19 @@ func (h *Handler) refreshToken(context *gin.Context) {
 	context.SetCookie("refreshToken", authDetails.RefreshToken.String(),
 		86400, "/", h.config.Host, false, false)
 
-	SuccessResponse(context, authDetails.AccessToken.String())
+	h.successResponse(context, authDetails.AccessToken.String())
 }
 
 func (h *Handler) verifyToken(context *gin.Context) {
 	tokenString, err := extractAuthToken(context)
 	if err != nil {
-		ErrorResponse(context, UnauthorizedError)
+		h.errorResponse(context, UnauthorizedError)
 		return
 	}
 
 	payload, err := h.authService.Payload(context, domain.Token(tokenString))
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
@@ -161,7 +161,7 @@ func (h *Handler) extractIdFromAuthHeader(context *gin.Context) (domain.ID, erro
 
 	payload, err := h.authService.Payload(context, domain.Token(tokenString))
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return domain.RandomID(), err
 	}
 

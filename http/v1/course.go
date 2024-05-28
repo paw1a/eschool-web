@@ -39,7 +39,7 @@ func (h *Handler) initCourseRoutes(api *gin.RouterGroup) {
 func (h *Handler) findAllCourses(context *gin.Context) {
 	courses, err := h.courseService.FindAll(context.Request.Context())
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
@@ -48,53 +48,53 @@ func (h *Handler) findAllCourses(context *gin.Context) {
 		courseDTOs[i] = dto.NewCourseDTO(course)
 	}
 
-	SuccessResponse(context, courseDTOs)
+	h.successResponse(context, courseDTOs)
 }
 
 func (h *Handler) findCourseByID(context *gin.Context) {
 	courseID, err := getIdFromPath(context, "id")
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	course, err := h.courseService.FindByID(context.Request.Context(), courseID)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	courseDTO := dto.NewCourseDTO(course)
-	SuccessResponse(context, courseDTO)
+	h.successResponse(context, courseDTO)
 }
 
 func (h *Handler) findLessonByID(context *gin.Context) {
 	lessonID, err := getIdFromPath(context, "lesson_id")
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	lesson, err := h.lessonService.FindByID(context.Request.Context(), lessonID)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	lessonDTO := dto.NewLessonDTO(lesson)
-	SuccessResponse(context, lessonDTO)
+	h.successResponse(context, lessonDTO)
 }
 
 func (h *Handler) findCourseTeachers(context *gin.Context) {
 	courseID, err := getIdFromPath(context, "id")
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	teachers, err := h.courseService.FindCourseTeachers(context.Request.Context(), courseID)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
@@ -103,52 +103,52 @@ func (h *Handler) findCourseTeachers(context *gin.Context) {
 		teacherDTOs[i] = dto.NewUserDTO(teacher)
 	}
 
-	SuccessResponse(context, teacherDTOs)
+	h.successResponse(context, teacherDTOs)
 }
 
 func (h *Handler) addCourseTeacher(context *gin.Context) {
 	courseID, err := getIdFromPath(context, "id")
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	course, err := h.courseService.FindByID(context.Request.Context(), courseID)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	if !h.checkCurrentUserIsSchoolOwner(context, course.SchoolID) {
-		ErrorResponse(context, ForbiddenError)
+		h.errorResponse(context, ForbiddenError)
 		return
 	}
 
 	teacherID, err := getIdFromPath(context, "teacher_id")
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	err = h.courseService.AddCourseTeacher(context.Request.Context(), teacherID, courseID)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
-	SuccessResponse(context, "successfully added teacher")
+	h.successResponse(context, "successfully added teacher")
 }
 
 func (h *Handler) findCourseLessons(context *gin.Context) {
 	courseID, err := getIdFromPath(context, "id")
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	lessons, err := h.lessonService.FindCourseLessons(context.Request.Context(), courseID)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
@@ -157,20 +157,20 @@ func (h *Handler) findCourseLessons(context *gin.Context) {
 		lessonDTOs[i] = dto.NewLessonDTO(lesson)
 	}
 
-	SuccessResponse(context, lessonDTOs)
+	h.successResponse(context, lessonDTOs)
 }
 
 func (h *Handler) createCourseLesson(context *gin.Context) {
 	courseID, err := getIdFromPath(context, "id")
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	var createLessonDTO dto.CreateLessonDTO
 	err = context.ShouldBindJSON(&createLessonDTO)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
@@ -178,7 +178,7 @@ func (h *Handler) createCourseLesson(context *gin.Context) {
 	switch createLessonDTO.Type {
 	case dto.LessonDTOTheory:
 		if !createLessonDTO.Theory.Valid {
-			ErrorResponse(context, BadRequestError)
+			h.errorResponse(context, BadRequestError)
 			return
 		}
 		lesson, err = h.lessonService.CreateTheoryLesson(context.Request.Context(),
@@ -189,7 +189,7 @@ func (h *Handler) createCourseLesson(context *gin.Context) {
 			})
 	case dto.LessonDTOVideo:
 		if !createLessonDTO.VideoUrl.Valid {
-			ErrorResponse(context, BadRequestError)
+			h.errorResponse(context, BadRequestError)
 			return
 		}
 		lesson, err = h.lessonService.CreateVideoLesson(context.Request.Context(),
@@ -200,7 +200,7 @@ func (h *Handler) createCourseLesson(context *gin.Context) {
 			})
 	case dto.LessonDTOPractice:
 		if createLessonDTO.Tests == nil {
-			ErrorResponse(context, BadRequestError)
+			h.errorResponse(context, BadRequestError)
 			return
 		}
 
@@ -221,35 +221,35 @@ func (h *Handler) createCourseLesson(context *gin.Context) {
 				Tests: tests,
 			})
 	default:
-		ErrorResponse(context, BadRequestError)
+		h.errorResponse(context, BadRequestError)
 		return
 	}
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	lessonDTO := dto.NewLessonDTO(lesson)
-	CreatedResponse(context, lessonDTO)
+	h.createdResponse(context, lessonDTO)
 }
 
 func (h *Handler) updateCourseLesson(context *gin.Context) {
 	lessonID, err := getIdFromPath(context, "lesson_id")
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	var updateLessonDTO dto.UpdateLessonDTO
 	err = context.ShouldBindJSON(&updateLessonDTO)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	lesson, err := h.lessonService.FindByID(context.Request.Context(), lessonID)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
@@ -257,7 +257,7 @@ func (h *Handler) updateCourseLesson(context *gin.Context) {
 	switch lesson.Type {
 	case domain.TheoryLesson:
 		if !updateLessonDTO.Theory.Valid {
-			ErrorResponse(context, BadRequestError)
+			h.errorResponse(context, BadRequestError)
 			return
 		}
 		updatedLesson, err = h.lessonService.UpdateTheoryLesson(context.Request.Context(),
@@ -268,7 +268,7 @@ func (h *Handler) updateCourseLesson(context *gin.Context) {
 			})
 	case domain.VideoLesson:
 		if !updateLessonDTO.VideoUrl.Valid {
-			ErrorResponse(context, BadRequestError)
+			h.errorResponse(context, BadRequestError)
 			return
 		}
 		updatedLesson, err = h.lessonService.UpdateVideoLesson(context.Request.Context(),
@@ -279,7 +279,7 @@ func (h *Handler) updateCourseLesson(context *gin.Context) {
 			})
 	case domain.PracticeLesson:
 		if updateLessonDTO.Tests == nil {
-			ErrorResponse(context, BadRequestError)
+			h.errorResponse(context, BadRequestError)
 			return
 		}
 
@@ -300,51 +300,51 @@ func (h *Handler) updateCourseLesson(context *gin.Context) {
 				Tests: tests,
 			})
 	default:
-		ErrorResponse(context, BadRequestError)
+		h.errorResponse(context, BadRequestError)
 		return
 	}
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	lessonDTO := dto.NewLessonDTO(updatedLesson)
-	CreatedResponse(context, lessonDTO)
+	h.createdResponse(context, lessonDTO)
 }
 
 func (h *Handler) deleteCourseLesson(context *gin.Context) {
 	lessonID, err := getIdFromPath(context, "lesson_id")
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	err = h.lessonService.Delete(context.Request.Context(), lessonID)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
-	SuccessResponse(context, "lesson successfully deleted")
+	h.successResponse(context, "lesson successfully deleted")
 }
 
 func (h *Handler) addCourseReview(context *gin.Context) {
 	userID, err := getIdFromRequestContext(context)
 	if err != nil {
-		ErrorResponse(context, UnauthorizedError)
+		h.errorResponse(context, UnauthorizedError)
 		return
 	}
 
 	courseID, err := getIdFromPath(context, "id")
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	var createReviewDTO dto.CreateReviewDTO
 	err = context.ShouldBindJSON(&createReviewDTO)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
@@ -352,19 +352,19 @@ func (h *Handler) addCourseReview(context *gin.Context) {
 		port.CreateReviewParam{Text: createReviewDTO.Text})
 
 	reviewDTO := dto.NewReviewDTO(review)
-	SuccessResponse(context, reviewDTO)
+	h.successResponse(context, reviewDTO)
 }
 
 func (h *Handler) findCourseReviews(context *gin.Context) {
 	courseID, err := getIdFromPath(context, "id")
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	reviews, err := h.reviewService.FindCourseReviews(context.Request.Context(), courseID)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
@@ -373,55 +373,55 @@ func (h *Handler) findCourseReviews(context *gin.Context) {
 		reviewDTOs[i] = dto.NewReviewDTO(review)
 	}
 
-	SuccessResponse(context, reviewDTOs)
+	h.successResponse(context, reviewDTOs)
 }
 
 func (h *Handler) findLessonStat(context *gin.Context) {
 	lessonID, err := getIdFromPath(context, "lesson_id")
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	userID, err := getIdFromRequestContext(context)
 	if err != nil {
-		ErrorResponse(context, UnauthorizedError)
+		h.errorResponse(context, UnauthorizedError)
 		return
 	}
 
 	stat, err := h.statService.FindLessonStat(context.Request.Context(), userID, lessonID)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	statDTO := dto.NewLessonStatDTO(stat)
-	SuccessResponse(context, statDTO)
+	h.successResponse(context, statDTO)
 }
 
 func (h *Handler) passCourseLesson(context *gin.Context) {
 	lessonID, err := getIdFromPath(context, "lesson_id")
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	userID, err := getIdFromRequestContext(context)
 	if err != nil {
-		ErrorResponse(context, UnauthorizedError)
+		h.errorResponse(context, UnauthorizedError)
 		return
 	}
 
 	var passLessonDTO dto.PassLessonDTO
 	err = context.ShouldBindJSON(&passLessonDTO)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	lesson, err := h.lessonService.FindByID(context, lessonID)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
@@ -436,7 +436,7 @@ func (h *Handler) passCourseLesson(context *gin.Context) {
 			})
 	case domain.PracticeLesson:
 		if len(passLessonDTO.PassTests) == 0 {
-			ErrorResponse(context, BadRequestError)
+			h.errorResponse(context, BadRequestError)
 			return
 		}
 
@@ -465,22 +465,22 @@ func (h *Handler) passCourseLesson(context *gin.Context) {
 	}
 
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
-	SuccessResponse(context, "successfully passed lesson")
+	h.successResponse(context, "successfully passed lesson")
 }
 
 func (h *Handler) verifyCourseWriteAccess(context *gin.Context) {
 	courseID, err := getIdFromPath(context, "id")
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	if !h.checkCurrentUserIsCourseTeacher(context, courseID) {
-		ErrorResponse(context, ForbiddenError)
+		h.errorResponse(context, ForbiddenError)
 		return
 	}
 }
@@ -488,14 +488,14 @@ func (h *Handler) verifyCourseWriteAccess(context *gin.Context) {
 func (h *Handler) verifyCourseReadAccess(context *gin.Context) {
 	courseID, err := getIdFromPath(context, "id")
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return
 	}
 
 	if !h.checkCurrentUserIsCourseOwner(context, courseID) &&
 		!h.checkCurrentUserIsCourseTeacher(context, courseID) &&
 		!h.checkCurrentUserIsCourseStudent(context, courseID) {
-		ErrorResponse(context, ForbiddenError)
+		h.errorResponse(context, ForbiddenError)
 		return
 	}
 }
@@ -508,7 +508,7 @@ func (h *Handler) checkCurrentUserIsCourseStudent(context *gin.Context, courseID
 
 	isStudent, err := h.courseService.IsCourseStudent(context.Request.Context(), userID, courseID)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return false
 	}
 
@@ -523,7 +523,7 @@ func (h *Handler) checkCurrentUserIsCourseTeacher(context *gin.Context, courseID
 
 	isTeacher, err := h.courseService.IsCourseTeacher(context.Request.Context(), userID, courseID)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return false
 	}
 
@@ -533,7 +533,7 @@ func (h *Handler) checkCurrentUserIsCourseTeacher(context *gin.Context, courseID
 func (h *Handler) checkCurrentUserIsCourseOwner(context *gin.Context, courseID domain.ID) bool {
 	course, err := h.courseService.FindByID(context.Request.Context(), courseID)
 	if err != nil {
-		ErrorResponse(context, err)
+		h.errorResponse(context, err)
 		return false
 	}
 
